@@ -1,22 +1,12 @@
 // 引入mysql库
 const mysql = require("mysql");
-// 引入mysql配置文件
-const { config } = require("./config");
-// 连接池的作用，数据库可能有很多的用户连接，所以需要连接池，连接池可以让很多用户同时使用
-// 每个用户使用完都会释放
-// {
-//     host: config.dev.host,
-//     user: config.dev.username,
-//     password: config.dev.password,
-//     database: config.dev.database
-// }
 const pool = mysql.createPool({
-  connectionLimit: 10, // 最大连接数
-  host: "47.98.20.231", // 主机
-  port: 3306,
-  user: "remoteadmin", // 用户名
-  password: "root", // 密码
-  database: "guisu", // 数据库名称
+  connectionLimit: Number(process.env.DB_CONNECTION_LIMIT || 10), // 最大连接数
+  host: process.env.DB_HOST || "localhost", // 主机
+  port: Number(process.env.DB_PORT || 3306),
+  user: process.env.DB_USER || "root", // 用户名
+  password: process.env.DB_PASSWORD || "123456aa", // 密码
+  database: process.env.DB_NAME || "guisu", // 数据库名称
 });
 
 // 创建这个类是因为在文件外部想使用Mysql.query使用query方法，而不是直接mysql();
@@ -33,7 +23,8 @@ class Mysql {
       // 获取数据库链接，在getConnection方法中获取到connection参数
       pool.getConnection(function (err, connection) {
         if (err) {
-          return err;
+          reject(err);
+          return;
         }
         // 使用connection参数中的query方法传入sql语句，去到数据库中查询
         connection.query(sql, values, (err, result) => {
