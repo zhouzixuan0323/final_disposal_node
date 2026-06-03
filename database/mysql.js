@@ -8,7 +8,6 @@ const pool = mysql.createPool({
   password: process.env.DB_PASSWORD || "123456aa", // 密码
   database: process.env.DB_NAME || "guisu", // 数据库名称
 });
-// test
 
 // 创建这个类是因为在文件外部想使用Mysql.query使用query方法，而不是直接mysql();
 class Mysql {
