@@ -1,37 +1,58 @@
 const mysql = require("../database/mysql");
 
 module.exports.findRubbishDetailList = async (rubbishType, page, pageSize) => {
-  let sql = `select r.rid, r.rname, c.cid from rubbish r, category c where r.cid = c.cid and r.cid = (select cid from category where cname = '${rubbishType}') limit ${
-    page * pageSize
-  }, ${pageSize};`;
-  return mysql.query(sql);
+  const sql =
+    "select r.rid, r.rname, c.cid from rubbish r, category c where r.cid = c.cid and c.cname = ? limit ?, ?;";
+  return mysql.query(sql, [rubbishType, page * pageSize, pageSize]);
 };
 
 module.exports.findRubbishTypeDataCount = async (rubbishType) => {
-  let sql = `select count(r.rid) total from rubbish r, category c where r.cid = c.cid and r.cid = (select cid from category where cname = '${rubbishType}') group by c.cid;`;
-  return mysql.query(sql);
+  const sql =
+    "select count(r.rid) total from rubbish r, category c where r.cid = c.cid and c.cname = ? group by c.cid;";
+  return mysql.query(sql, [rubbishType]);
 };
 
 module.exports.findRubbishTypeIntroduce = async (rubbishType) => {
-  let sql = `select g.gid, g.introduce, g.ask, g.color, g.prioritizedApproach from garbage_disposal g, category c where g.cid = c.cid and g.cid = (select cid from category where cname = '${rubbishType}');`;
-  return mysql.query(sql);
+  const sql =
+    "select g.gid, g.introduce, g.ask, g.color, g.prioritizedApproach from garbage_disposal g, category c where g.cid = c.cid and c.cname = ?;";
+  return mysql.query(sql, [rubbishType]);
 };
 
 module.exports.findSearchRubbishList = async ({
+  rubbishType,
   page,
   pageSize,
   rubbishName,
 }) => {
-  let sql = `select rname,rid from rubbish where rname LIKE '%${rubbishName}%' or rname LIKE '%${rubbishName}' or rname LIKE '${rubbishName}%' LIMIT ${page}, ${pageSize} `;
-  return mysql.query(sql);
+  const values = [`%${rubbishName}%`];
+  let sql =
+    "select r.rname, r.rid from rubbish r inner join category c on r.cid = c.cid where r.rname like ?";
+
+  if (rubbishType) {
+    sql += " and c.cname = ?";
+    values.push(rubbishType);
+  }
+
+  sql += " limit ?, ?";
+  values.push(page * pageSize, pageSize);
+  return mysql.query(sql, values);
 };
 
-module.exports.findSearchRubbishCount = async (rubbishName) => {
-  let sql = `select count(rname) total from rubbish where rname LIKE '%${rubbishName}%' or rname LIKE '%${rubbishName}' or rname LIKE '${rubbishName}%';`;
-  return mysql.query(sql);
+module.exports.findSearchRubbishCount = async ({ rubbishType, rubbishName }) => {
+  const values = [`%${rubbishName}%`];
+  let sql =
+    "select count(r.rid) total from rubbish r inner join category c on r.cid = c.cid where r.rname like ?";
+
+  if (rubbishType) {
+    sql += " and c.cname = ?";
+    values.push(rubbishType);
+  }
+
+  return mysql.query(sql, values);
 };
 
 module.exports.findRubbishType = async (id) => {
-  let sql = `select cname, rname, introduce, prioritizedApproach, color from category c, rubbish r, garbage_disposal g where r.cid = c.cid and g.cid = r.cid and r.rid = '${id}';`;
-  return mysql.query(sql);
+  const sql =
+    "select c.cname, r.rname, g.introduce, g.prioritizedApproach, g.color from rubbish r inner join category c on r.cid = c.cid inner join garbage_disposal g on g.cid = c.cid where r.rid = ?;";
+  return mysql.query(sql, [id]);
 };

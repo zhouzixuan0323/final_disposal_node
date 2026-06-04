@@ -10,11 +10,12 @@ module.exports.findCountUser = async () => {
 
 // 获取当前用户基本信息
 module.exports.findUserInfo = async (username) => {
-  let sql = `select username,nickname,age,gender,address from users u, userinfo ui where u.uid = ui.uid and (select uid from users where username = '${username}') = ui.uid`;
-  return await mysql.query(sql);
+  const sql =
+    "select username, username nickname, null age, gender, null address from users where username = ?";
+  return await mysql.query(sql, [username]);
 };
 
 module.exports.finedUserAgeDistributeData = async () => {
-  let sql = `select count(age) value, age name from userinfo GROUP BY age;`;
+  let sql = "select count(*) value, gender name from users group by gender;";
   return await mysql.query(sql);
 };

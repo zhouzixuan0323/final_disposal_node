@@ -6,6 +6,8 @@
     "start": "nodemon bin/www",
     "dev": "./node_modules/.bin/nodemon bin/www",
     "prd": "pm2 start bin/www",
+    "db:init": "sh scripts/init-db.sh",
+    "deploy:check": "sh scripts/check-deploy.sh",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {

@@ -3,6 +3,7 @@ let {
   findUserInfo,
   finedUserAgeDistributeData,
 } = require("../models/user");
+const Joi = require("joi");
 module.exports.findCountUser = async (ctx, next) => {
   let userCount = await findCountUser();
   // 判断是否找到数据
@@ -21,7 +22,10 @@ module.exports.findCountUser = async (ctx, next) => {
 };
 
 module.exports.findUserInfo = async (ctx, next) => {
-  let username = "admin2";
+  const schema = Joi.object({
+    username: Joi.string().min(2).max(30).default("admin2"),
+  });
+  let { username } = await schema.validateAsync(ctx.request.query);
   let userInfo = await findUserInfo(username);
   // 判断是否找到数据
   if (userInfo[0]) {
@@ -32,9 +36,10 @@ module.exports.findUserInfo = async (ctx, next) => {
     });
   }
 
+  ctx.status = 404;
   ctx.body = {
-    code: 500,
-    message: "请求失败",
+    code: 404,
+    message: "未找到用户信息",
   };
 };
 

@@ -5,7 +5,7 @@ const pool = mysql.createPool({
   host: process.env.DB_HOST || "localhost", // 主机
   port: Number(process.env.DB_PORT || 3306),
   user: process.env.DB_USER || "root", // 用户名
-  password: process.env.DB_PASSWORD || "123456aa", // 密码
+  password: process.env.DB_PASSWORD || "", // 密码
   database: process.env.DB_NAME || "guisu", // 数据库名称
 });
 

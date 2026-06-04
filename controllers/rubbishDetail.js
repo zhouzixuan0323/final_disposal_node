@@ -6,8 +6,28 @@ const {
   findSearchRubbishCount,
   findRubbishType,
 } = require("../models/rubbishDetail");
+const Joi = require("joi");
+
+function parseJsonArray(value) {
+  if (!value) return [];
+  const parsed = JSON.parse(value);
+  return Array.isArray(parsed) ? parsed : [];
+}
+
+function pageCount(total, pageSize) {
+  return Math.max(Math.ceil(total / pageSize) - 1, 0);
+}
+
 module.exports.rubbishDetailList = async (ctx, next) => {
-  let { rubbishType, page, pageSize } = ctx.request.query;
+  const schema = Joi.object({
+    rubbishType: Joi.string().required(),
+    page: Joi.number().integer().min(0).default(0),
+    pageSize: Joi.number().integer().min(1).max(100).default(10),
+  });
+  let { rubbishType, page, pageSize } = await schema.validateAsync(
+    ctx.request.query
+  );
+
   // 获取垃圾类型中垃圾总数
   let rubbishTypeDataCount = await findRubbishTypeDataCount(rubbishType);
   // 获取垃圾类型中垃圾数据
@@ -18,31 +38,42 @@ module.exports.rubbishDetailList = async (ctx, next) => {
   );
   let rubbishTypeIntroduce = await findRubbishTypeIntroduce(rubbishType);
   // 判断是否找到数据
-  if (rubbishDetailData[0] && rubbishTypeDataCount[0]) {
+  if (rubbishTypeDataCount[0] && rubbishTypeIntroduce[0]) {
     // 找到就返回
     return (ctx.body = {
       code: 200,
       data: {
         items: rubbishDetailData,
-        pages: Math.ceil(rubbishTypeDataCount[0].total / pageSize) - 1,
+        pages: pageCount(rubbishTypeDataCount[0].total, pageSize),
         introduce: rubbishTypeIntroduce[0].introduce,
-        ask: JSON.parse(rubbishTypeIntroduce[0].ask),
+        ask: parseJsonArray(rubbishTypeIntroduce[0].ask),
         color: rubbishTypeIntroduce[0].color,
-        prioritizedApproach: JSON.parse(
+        prioritizedApproach: parseJsonArray(
           rubbishTypeIntroduce[0].prioritizedApproach
         ),
       },
     });
   }
   // 没有找到数据
+  ctx.status = 404;
   ctx.body = {
-    code: 500,
-    message: "请求失败",
+    code: 404,
+    message: "未找到垃圾分类数据",
   };
 };
 
 module.exports.findRubbishSearchList = async (ctx, next) => {
-  let { rubbishType, page, pageSize, rubbishName } = ctx.request.query;
+  const schema = Joi.object({
+    rubbishType: Joi.string().allow("", null).default(""),
+    page: Joi.number().integer().min(0).default(0),
+    pageSize: Joi.number().integer().min(1).max(100).default(10),
+    rubbishName: Joi.string().required(),
+  });
+  let { rubbishType, page, pageSize, rubbishName } = await schema.validateAsync(
+    ctx.request.query
+  );
+  rubbishType = rubbishType || "";
+
   let searchRubbishList = await findSearchRubbishList({
     rubbishType,
     page,
@@ -50,25 +81,31 @@ module.exports.findRubbishSearchList = async (ctx, next) => {
     rubbishName,
   });
 
-  let searchRubbishCount = await findSearchRubbishCount(rubbishName);
+  let searchRubbishCount = await findSearchRubbishCount({
+    rubbishType,
+    rubbishName,
+  });
 
   ctx.body = {
     code: 200,
     data: {
       items: searchRubbishList,
-      pages: Math.ceil(searchRubbishCount[0].total / pageSize) - 1,
+      pages: pageCount(searchRubbishCount[0].total, pageSize),
     },
   };
 };
 
 module.exports.findRubbishType = async (ctx, next) => {
-  let { id } = ctx.request.query;
+  const schema = Joi.object({
+    id: Joi.number().integer().min(1).required(),
+  });
+  let { id } = await schema.validateAsync(ctx.request.query);
   let rubbishType = await findRubbishType(id);
 
-  rubbishType[0].prioritizedApproach = JSON.parse(
-    rubbishType[0].prioritizedApproach
-  );
   if (rubbishType[0]) {
+    rubbishType[0].prioritizedApproach = parseJsonArray(
+      rubbishType[0].prioritizedApproach
+    );
     return (ctx.body = {
       code: 200,
       message: "请求成功",
@@ -77,8 +114,10 @@ module.exports.findRubbishType = async (ctx, next) => {
       },
     });
   }
+
+  ctx.status = 404;
   ctx.body = {
-    code: 500,
-    message: "请求失败",
+    code: 404,
+    message: "未找到垃圾详情",
   };
 };
